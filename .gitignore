@@ -1,0 +1,37 @@
+# BillionCore - High-Performance BIN Engine
+# Sensitive Data Protection
+
+# BIN Rules & Performance Data (Proprietary)
+*.csv
+
+# Security & Credentials
+vps.key
+*.pem
+*.key
+.env
+
+# Go Binaries & Executables
+bin-engine
+bin-engine-linux
+tether-bin-engine
+stress-tester-mac
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go Caches & Temporary Files
+.go-cache/
+.go-path/
+.go-tmp/
+vendor/
+
+# System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

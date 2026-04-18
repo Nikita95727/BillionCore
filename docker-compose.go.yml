@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  tether-bin-go:
+    build:
+      context: .
+      dockerfile: Dockerfile.go
+    container_name: tether-bin-go
+    ports:
+      - "8082:8082"
+    restart: unless-stopped
+    networks:
+      - bin-network
+
+networks:
+  bin-network:
+    driver: bridge
