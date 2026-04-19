@@ -15,7 +15,7 @@ While traditional tech stacks (PHP, Python, Node.js) struggle with overhead and 
 | Metric | BillionCore Performance |
 | :--- | :--- |
 | **Engine Internal Latency** | **16.3 microseconds (µs)** |
-| **Throughput (Internal)** | **11,300+ Requests/sec** |
+| **Throughput (Internal)** | **5,500+ Requests/sec** |
 | **Throughput (Public Proxy)** | **3,250+ Requests/sec** (Limited by Network/Nginx) |
 | **Memory Footprint** | **~12MB** (under heavy load) |
 | **Reliability** | **0% Errors** under 1,000 concurrent connections |
