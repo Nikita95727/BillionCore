@@ -69,6 +69,60 @@ docker run -p 8083:8083 billioncore-engine
 
 ---
 
+## 🔌 API Reference
+
+The BillionCore Engine exposes a minimalist REST API designed for high-throughput consumption.
+
+### 1. BIN Lookup
+**Endpoint**: `GET /api/bin/lookup`
+
+**Headers**:
+- `X-API-Key`: Your secure API authentication key.
+
+**Query Parameters**:
+- `bin` (required): The 6 or 8-digit BIN number to verify.
+- `country` (required): ISO-2 country code (e.g., `US`, `GB`, `ES`).
+
+#### Sample Request
+```bash
+curl -X GET "http://localhost:8083/api/bin/lookup?bin=457112&country=US" \
+     -H "X-API-Key: your_api_key_here"
+```
+
+#### Sample Response
+```json
+{
+  "success": true,
+  "data": {
+    "bin": "457112",
+    "country": "US",
+    "action": "ENABLE",
+    "trial_price": 1.00,
+    "trial_period": 3,
+    "rebill_price": 49.99,
+    "rebill_period": 30,
+    "x_sell_status": "ENABLE",
+    "bin_performance": {
+      "gross_profit": 85.5,
+      "lead_u": 1.25,
+      "first_rebill": 42.1,
+      "rebill": 15.6,
+      "tc40_safe": 98.2,
+      "cb": 0.05,
+      "refund": 1.2
+    }
+  },
+  "timestamp": "2026-04-19T13:15:00Z"
+}
+```
+
+### 2. Monitoring Performance
+Every response includes custom headers that expose the internal engine processing time, independent of network latency:
+- `X-Internal-Time`: Human-readable latency (e.g., `16.3µs`).
+- `X-Internal-Nanoseconds`: Raw nanosecond timing for high-precision auditing.
+
+---
+
 ## 🔬 Use Cases
 
 - **Real-Time Payment Routing**: Decide the best payment provider based on BIN data in under 20 microseconds.
