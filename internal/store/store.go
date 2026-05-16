@@ -1,65 +1,65 @@
 package store
 
 import (
-	"sync"
+	"sync/atomic"
 	"tether-bin-go/internal/models"
 )
 
-type BinStore struct {
+// binData is an immutable snapshot of all BIN rules and performance metrics.
+// Replaced atomically during a hot reload; maps inside are never mutated.
+type binData struct {
 	rules       map[string]map[string]models.BinRule
 	performance map[string]models.BinPerformance
-	mu          sync.RWMutex
 }
 
+// BinStore holds the active BIN data set behind an atomic pointer.
+//
+// Read path: one atomic.Pointer.Load() + two map lookups — completely lock-free.
+// Write path (hot reload): build new maps off the hot path, then Swap() atomically.
+// In-flight readers finish safely with the old snapshot; new readers see the new one.
+type BinStore struct {
+	ptr atomic.Pointer[binData]
+}
+
+// NewBinStore creates an empty BinStore.
 func NewBinStore() *BinStore {
-	return &BinStore{
+	s := &BinStore{}
+	s.ptr.Store(&binData{
 		rules:       make(map[string]map[string]models.BinRule),
 		performance: make(map[string]models.BinPerformance),
-	}
+	})
+	return s
 }
 
+// GetRule returns the BinRule for (bin, country), or (zero, false) if absent.
+// Lock-free.
 func (s *BinStore) GetRule(bin, country string) (models.BinRule, bool) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	
-	countryRules, ok := s.rules[bin]
-	if !ok {
-		return models.BinRule{}, false
+	d := s.ptr.Load()
+	if countryRules, ok := d.rules[bin]; ok {
+		rule, ok := countryRules[country]
+		return rule, ok
 	}
-	
-	rule, ok := countryRules[country]
-	return rule, ok
+	return models.BinRule{}, false
 }
 
+// GetPerformance returns the BinPerformance for bin, or (zero, false) if absent.
+// Lock-free.
 func (s *BinStore) GetPerformance(bin string) (models.BinPerformance, bool) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	
-	perf, ok := s.performance[bin]
+	d := s.ptr.Load()
+	perf, ok := d.performance[bin]
 	return perf, ok
 }
 
-func (s *BinStore) AddRule(bin, country string, rule models.BinRule) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	
-	if _, ok := s.rules[bin]; !ok {
-		s.rules[bin] = make(map[string]models.BinRule)
-	}
-	s.rules[bin][country] = rule
+// Swap atomically replaces the entire data set.
+// Callers build new maps in the background, then call Swap once to publish them.
+func (s *BinStore) Swap(
+	rules map[string]map[string]models.BinRule,
+	perf  map[string]models.BinPerformance,
+) {
+	s.ptr.Store(&binData{rules: rules, performance: perf})
 }
 
-func (s *BinStore) AddPerformance(bin string, perf models.BinPerformance) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	
-	s.performance[bin] = perf
-}
-
-func (s *BinStore) Clear() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	
-	s.rules = make(map[string]map[string]models.BinRule)
-	s.performance = make(map[string]models.BinPerformance)
+// RuleCount returns the number of BIN prefixes in the current snapshot.
+func (s *BinStore) RuleCount() int {
+	return len(s.ptr.Load().rules)
 }
